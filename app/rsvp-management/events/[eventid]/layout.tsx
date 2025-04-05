@@ -2,22 +2,24 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useState } from "react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const params = useParams();
+  const eventId = params?.eventid as string;
 
   const isActive = (path: string) => pathname === path;
 
   const navItems = [
-    { name: "Home", path: "/rsvp-management" },
-    { name: "Invitations", path: "/rsvp-management/invitations" },
-    { name: "Guest List", path: "/rsvp-management/guest-list" },
-    { name: "Check-In", path: "/rsvp-management/check-in" },
-    { name: "Reports", path: "/rsvp-management/reports" },
-    { name: "Thank You Notes", path: "/rsvp-management/thank-you" },
+    { name: "Home", path: `/rsvp-management/events/${eventId}/` },
+    { name: "Invitations", path: `/rsvp-management/events/${eventId}/invitations` },
+    { name: "Guest List", path: `/rsvp-management/events/${eventId}/guest-list` },
+    { name: "Check-In", path: `/rsvp-management/events/${eventId}/check-in` },
+    { name: "Reports", path: `/rsvp-management/events/${eventId}/reports` },
+    { name: "Thank You Notes", path: `/rsvp-management/events/${eventId}/reports` },
   ];
 
   return (
