@@ -3,6 +3,9 @@ export interface Guest {
     name: string;
     email: string;
     events: { [eventId: string]: { rsvpStatus: 'pending' | 'accepted' | 'declined'; token: string } };
+    qrCode: string;
+    attending: "yes" | "no";
+    checkedIn: boolean;
 }
 
 export interface Event {
