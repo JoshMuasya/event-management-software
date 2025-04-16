@@ -21,6 +21,7 @@ interface ScanResult {
 const CheckInComponent = () => {
   const [guests, setGuests] = useState<Guest[]>(dummyGuests);
   const [scanning, setScanning] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [message, setMessage] = useState<string>("");
 
@@ -66,13 +67,41 @@ const CheckInComponent = () => {
     setScanning(!scanning);
     setError("");
     setMessage("");
+    setSearchQuery(""); // Clear search when toggling scanning
   };
+
+  // Handle manual check-in by guest name
+  const handleManualCheckIn = (guestId: string) => {
+    const guest = guests.find((g) => g.id === guestId && g.attending === "yes");
+    if (guest) {
+      if (!guest.checkedIn) {
+        const updatedGuests = guests.map((g) =>
+          g.id === guestId ? { ...g, checkedIn: true } : g
+        );
+        setGuests(updatedGuests);
+        setMessage(`Checked in: ${guest.name}`);
+        setError("");
+        setSearchQuery(""); // Clear search after check-in
+      } else {
+        setError("Guest already checked in");
+      }
+    } else {
+      setError("Guest not found or not attending");
+    }
+  };
+
+  // Filter guests based on search query
+  const filteredGuests = guests
+    .filter((guest) => guest.attending === "yes")
+    .filter((guest) =>
+      guest.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return (
     <div style={{ padding: "1rem", maxWidth: "600px", margin: "0 auto" }}>
       <h1 style={{ textAlign: "center" }}>Guest Check-In</h1>
       <p style={{ textAlign: "center" }}>
-        Scan the guest's QR code to check them in.
+        Scan the guest's QR code or search by name to check them in.
       </p>
 
       <button
@@ -101,6 +130,63 @@ const CheckInComponent = () => {
             styles={{ container: { width: "100%", maxWidth: "400px" } }} // Adjust size
             constraints={{ facingMode: "environment" }} // Prefer rear camera
           />
+        </div>
+      )}
+
+      {!scanning && (
+        <div style={{ marginBottom: "1rem" }}>
+          <input
+            type="text"
+            placeholder="Search guest by name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "0.5rem",
+              fontSize: "1rem",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+            }}
+          />
+          {searchQuery && (
+            <ul style={{ listStyle: "none", padding: 0, marginTop: "0.5rem" }}>
+              {filteredGuests.length > 0 ? (
+                filteredGuests.map((guest) => (
+                  <li
+                    key={guest.id}
+                    style={{
+                      padding: "0.5rem",
+                      borderBottom: "1px solid #eee",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    {guest.name}
+                    <button
+                      onClick={() => handleManualCheckIn(guest.id)}
+                      style={{
+                        padding: "0.3rem 0.6rem",
+                        fontSize: "0.9rem",
+                        backgroundColor: guest.checkedIn ? "#6c757d" : "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: guest.checkedIn ? "not-allowed" : "pointer",
+                      }}
+                      disabled={guest.checkedIn}
+                    >
+                      {guest.checkedIn ? "Checked In" : "Check In"}
+                    </button>
+                  </li>
+                ))
+              ) : (
+                <li style={{ padding: "0.5rem", color: "#666" }}>
+                  No guests found
+                </li>
+              )}
+            </ul>
+          )}
         </div>
       )}
 

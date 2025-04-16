@@ -19,7 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Guest List", path: `/rsvp-management/events/${eventId}/guest-list` },
     { name: "Check-In", path: `/rsvp-management/events/${eventId}/check-in` },
     { name: "Reports", path: `/rsvp-management/events/${eventId}/reports` },
-    { name: "Thank You Notes", path: `/rsvp-management/events/${eventId}/reports` },
+    { name: "Thank You Notes", path: `/rsvp-management/events/${eventId}/thank-you` },
   ];
 
   return (
