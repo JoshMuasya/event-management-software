@@ -1,3 +1,4 @@
+// middleware.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
@@ -27,6 +28,7 @@ const publicRoutes = [
   '/',
   '/features',
   '/signin',
+  '/signup', // Added to allow unauthenticated access to sign-up
   '/rsvp',
   '/rsvp/*',
   '/api/rsvp',
@@ -41,8 +43,9 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: process.env.NODE_ENV === 'production', // Use secure cookies in production
   });
-  console.log('Token:', token);
+  console.log('Token:', token ? { id: token.id, role: token.role } : 'No token');
 
   // Check if the route is public
   const isPublicRoute = publicRoutes.some((route) => {
@@ -53,15 +56,6 @@ export async function middleware(request: NextRequest) {
     return regex.test(pathname);
   });
   console.log('Is Public Route:', isPublicRoute);
-  if (isPublicRoute) {
-    console.log('Matched Public Route:', publicRoutes.find((route) => {
-      if (route === '/') {
-        return pathname === '/';
-      }
-      const regex = new RegExp(`^${route.replace('*', '.*')}$`);
-      return regex.test(pathname);
-    }));
-  }
 
   // Check if the route is protected
   const isProtectedRoute = protectedRoutes.some((route) => {
@@ -72,42 +66,38 @@ export async function middleware(request: NextRequest) {
     const regex = new RegExp(`^${route.replace('*', '.*')}$`);
     return regex.test(pathname);
   });
-  console.log('Is Protected Route:', isProtectedRoute);
-  console.log('Is Protected API Route:', isProtectedApiRoute);
 
-  // If the route is public, allow access
+  // Allow public routes
   if (isPublicRoute) {
-    console.log('Allowing public route');
     return NextResponse.next();
   }
 
-  // If the route is protected (UI or API) and no token exists, redirect or return error
+  // Handle protected routes (UI or API) with no token
   if ((isProtectedRoute || isProtectedApiRoute) && !token) {
-    console.log('No token, redirecting');
     if (isProtectedApiRoute) {
       return new NextResponse(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
-    // Redirect to custom sign-in page
-    const loginUrl = new URL('/signin', request.url);
+    const loginUrl = new URL('/auth/signin', request.url);
     loginUrl.searchParams.set('callbackUrl', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  // For authenticated users, check role (e.g., organizer) for admin routes
+  // Check role for protected routes
   if (isProtectedRoute || isProtectedApiRoute) {
     const userRole = token?.role;
     console.log('User Role:', userRole);
-    if (userRole !== 'organizer') {
+    if (userRole !== 'admin') { // Changed from 'organizer' to 'admin'
+      console.log('Invalid role, redirecting');
       if (isProtectedApiRoute) {
         return new NextResponse(
-          JSON.stringify({ error: 'Forbidden: Organizer role required' }),
+          JSON.stringify({ error: 'Forbidden: Admin role required' }),
           { status: 403, headers: { 'Content-Type': 'application/json' } }
         );
       }
-      return NextResponse.redirect(new URL('/unauthorized', request.url));
+      return NextResponse.redirect(new URL('/rsvp', request.url)); // Redirect to /rsvp instead of /unauthorized
     }
   }
 
