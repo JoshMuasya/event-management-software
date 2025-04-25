@@ -1,50 +1,36 @@
-import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
+'use client';
+
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { FaGift, FaEnvelope, FaClock } from 'react-icons/fa';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { authOptions } from '../api/auth/[...nextauth]/route';
-import { db } from '@/lib/firebase/firebase';
+import { FaGift, FaEnvelope, FaClock, FaUsers } from 'react-icons/fa';
 
-export default async function MainDashboard() {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    redirect('/auth/signin');
-  }
-
-  if (session.user.role !== 'admin') {
-    redirect('/rsvp');
-  }
-
-  // Fetch data from Firestore
-  const rsvpsSnapshot = await getDocs(collection(db, 'rsvps'));
-  const usersSnapshot = await getDocs(collection(db, 'users'));
-  const giftsSnapshot = await getDocs(collection(db, 'gifts'));
-  const tasksSnapshot = await getDocs(collection(db, 'tasks'));
-
-  const dashboardData = {
-    guestList: {
-      total: usersSnapshot.size,
-      confirmed: usersSnapshot.docs.filter(doc => doc.data().role === 'guest').length,
-      pending: usersSnapshot.docs.filter(doc => doc.data().role === 'pending').length,
-    },
-    gifts: {
-      totalReceived: giftsSnapshot.size,
-      thankYouSent: giftsSnapshot.docs.filter(doc => doc.data().thankYouSent).length,
-    },
-    rsvps: {
-      total: rsvpsSnapshot.size,
-      responded: rsvpsSnapshot.docs.filter(doc => doc.data().attending !== undefined).length,
-      pending: rsvpsSnapshot.docs.filter(doc => doc.data().attending === undefined).length,
-    },
-    timeline: {
-      tasks: tasksSnapshot.size,
-      completed: tasksSnapshot.docs.filter(doc => doc.data().completed).length,
-    },
+// Define the shape of the dashboard data
+interface DashboardData {
+  guestList: {
+    total: number;
+    confirmed: number;
+    pending: number;
   };
+  gifts: {
+    totalReceived: number;
+    thankYouSent: number;
+  };
+  rsvps: {
+    total: number;
+    responded: number;
+    pending: number;
+  };
+  timeline: {
+    tasks: number;
+    completed: number;
+  };
+}
 
+interface DashboardClientProps {
+  dashboardData: DashboardData;
+}
+
+export default function DashboardClient({ dashboardData }: DashboardClientProps) {
   return (
     <motion.section
       id="main-dashboard"
@@ -73,7 +59,7 @@ export default async function MainDashboard() {
       </div>
 
       {/* Dashboard Cards */}
-      <div className="relative z-10 w-full max-w-6xl px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="relative z-10 w-full max-w-6xl px-6 grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {/* RSVP Management */}
         <motion.div
           className="p-6 rounded-lg shadow-lg flex flex-col items-center text-center"
@@ -169,13 +155,43 @@ export default async function MainDashboard() {
             </motion.button>
           </Link>
         </motion.div>
+
+        {/* Guest List */}
+        <motion.div
+          className="p-6 rounded-lg shadow-lg flex flex-col items-center text-center"
+          style={{
+            background: 'linear-gradient(135deg, rgba(250, 167, 34, 0.2), rgba(255, 215, 0, 0.2))',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 215, 0, 0.3)',
+            boxShadow: '0 4px 15px rgba(250, 167, 34, 0.2), inset 0 0 10px rgba(255, 215, 0, 0.1)',
+          }}
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+          whileHover={{ scale: 1.03, boxShadow: '0 6px 20px rgba(250, 167, 34, 0.3)' }}
+        >
+          <FaUsers className="text-4xl md:text-5xl mb-4" style={{ color: '#FAA722' }} />
+          <h2 className="text-xl md:text-2xl font-bold mb-2 font-playfair" style={{ color: '#FFFFFF' }}>
+            Guest List
+          </h2>
+          <p className="text-sm md:text-md mb-4 font-lora" style={{ color: '#FFFFFF' }}>
+            Total: {dashboardData.guestList.total} | Confirmed: {dashboardData.guestList.confirmed} | Pending: {dashboardData.guestList.pending}
+          </p>
+          <Link href="/dashboard/guest-list">
+            <motion.button
+              className="px-4 py-2 bg-[#FAA722] text-black rounded-md font-bold font-lora"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Manage Guests
+            </motion.button>
+          </Link>
+        </motion.div>
       </div>
 
       {/* Quick Actions */}
       <div className="relative z-10 w-full max-w-4xl px-6 mt-12">
-        <h3 className="text-2xl font-bold text-white mb-4 text-center font-playfair">
-          Quick Actions
-        </h3>
+        <h3 className="text-2xl font-bold text-white mb-4 text-center font-playfair">Quick Actions</h3>
         <div className="flex flex-col md:flex-row justify-center gap-4">
           <Link href="/dashboard/guest-list">
             <motion.button
@@ -188,7 +204,7 @@ export default async function MainDashboard() {
           </Link>
           <Link href="/dashboard/gift-tracking">
             <motion.button
-              className="px-6 py-3 bg-[#FFD700] quick-actions text-black rounded-md font-bold font-lora"
+              className="px-6 py-3 bg-[#FFD700] text-black rounded-md font-bold font-lora"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
